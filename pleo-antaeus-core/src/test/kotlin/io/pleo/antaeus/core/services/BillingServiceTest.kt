@@ -72,9 +72,8 @@ class BillingServiceTest {
     }
 
     @Test
-    fun `NetworkException generates ASD notification`() {
+    fun `NetworkException generates no notification`() {
         every { paymentProvider.charge(invoice) } throws NetworkException()
-        //every { customerNotificationService.currencyMismatch(invoice) } returns Unit
 
         assertDoesNotThrow { billingService.charge(invoice) }
     }
