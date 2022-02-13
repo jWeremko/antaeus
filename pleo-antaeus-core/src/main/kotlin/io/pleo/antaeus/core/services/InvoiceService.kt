@@ -8,6 +8,7 @@ import io.pleo.antaeus.core.exceptions.InvoiceNotFoundException
 import io.pleo.antaeus.data.AntaeusDal
 import io.pleo.antaeus.models.Invoice
 import io.pleo.antaeus.models.InvoiceStatus
+import kotlinx.coroutines.*
 
 class InvoiceService(private val dal: AntaeusDal) {
 
@@ -31,18 +32,24 @@ class InvoiceService(private val dal: AntaeusDal) {
         return dal.updateInvoiceStatus(id, status)
     }
 
-    fun executeForEach(status: InvoiceStatus, pageSize : Int, invoiceCallback : (invoice: Invoice) -> Boolean) {
+    fun executeForEach(status: InvoiceStatus, pageSize: Int, invoiceCallback: (invoice: Invoice) -> Boolean) {
         val pageRequest = AntaeusDal.PageRequest(pageSize)
-        while(true) {
+        while (true) {
             val invoices = dal.fetchInvoices(status, pageRequest)
             if (invoices.isEmpty()) {
                 break
             }
 
-            invoices.forEach { invoice ->
-                invoiceCallback(invoice)
+            runBlocking(Dispatchers.Default) {
+                invoices.asyncmap { invoice -> invoiceCallback(invoice) }
             }
             pageRequest.nextPage()
         }
+    }
+
+    private suspend fun <A, B> Iterable<A>.asyncmap(executeMe: suspend (A) -> B): List<B> = coroutineScope {
+        map {
+            async { executeMe(it) }
+        }.awaitAll()
     }
 }

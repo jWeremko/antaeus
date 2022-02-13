@@ -8,10 +8,13 @@ import io.pleo.antaeus.models.Currency
 import io.pleo.antaeus.models.Invoice
 import io.pleo.antaeus.models.InvoiceStatus
 import io.pleo.antaeus.models.Money
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.math.BigDecimal
+import java.util.concurrent.atomic.AtomicInteger
 
 class InvoiceServiceTest {
     private val dal = mockk<AntaeusDal> {
@@ -32,10 +35,10 @@ class InvoiceServiceTest {
     @Test
     fun `executeForEach should callback function expected number of times`() {
         class Counter() {
-            var callCount = 0
+            var callCount = AtomicInteger(0)
 
             fun call(invoice : Invoice) : Boolean {
-                this.callCount = this.callCount + 1
+                this.callCount.incrementAndGet()
                 return true
             }
         }
@@ -43,7 +46,9 @@ class InvoiceServiceTest {
 
         every { dal.fetchInvoices(InvoiceStatus.PENDING, any()) } returnsMany listOf(invoices, invoices, emptyList())
 
-        invoiceService.executeForEach(InvoiceStatus.PENDING, 2, counter::call)
+        runBlocking(Dispatchers.Default) {
+            invoiceService.executeForEach(InvoiceStatus.PENDING, 2, counter::call)
+        }
         assertEquals(2, counter.callCount)
     }
 }

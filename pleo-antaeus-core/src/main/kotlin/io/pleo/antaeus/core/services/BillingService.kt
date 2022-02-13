@@ -8,6 +8,7 @@ import io.pleo.antaeus.core.utils.DateTimeUtility
 import io.pleo.antaeus.models.Invoice
 import io.pleo.antaeus.models.InvoiceStatus
 import kotlinx.coroutines.*
+import mu.KotlinLogging
 import kotlin.coroutines.CoroutineContext
 
 class BillingService(
@@ -16,6 +17,8 @@ class BillingService(
         private val notificationService: NotificationService,
         private val dateTimeUtility: DateTimeUtility
 ) : CoroutineScope {
+    private val logger = KotlinLogging.logger {}
+
     //NOTE: main reason to have defaultPageSize is memory footprint optimization
     //TODO: make it configurable
     private val defaultPageSize = 20
@@ -30,7 +33,10 @@ class BillingService(
     fun run() = launch {
         while (true) {
             delay(dateTimeUtility.nextMonthFirstDayDelay(dateTimeUtility.now()))
+
+            val startTime = System.currentTimeMillis()
             invoiceService.executeForEach(InvoiceStatus.PENDING, defaultPageSize, ::charge)
+            logger.info { "Invoices processing time : ${System.currentTimeMillis() - startTime}" }
         }
     }
 
