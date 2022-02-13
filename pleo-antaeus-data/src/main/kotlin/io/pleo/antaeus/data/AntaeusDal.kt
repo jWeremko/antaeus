@@ -11,7 +11,21 @@ import io.pleo.antaeus.models.*
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 
+//TODO: implement integration test for all of AntaeusDal methods
 class AntaeusDal(private val db: Database) {
+    class PageRequest(val pageSize: Int) {
+        //TODO: think if there is a better place for this class
+        private var pageNumber: Int = 0
+
+        fun nextPage() {
+            this.pageNumber++
+        }
+
+        fun offset() : Int {
+            return this.pageSize * this.pageNumber
+        }
+    }
+
     fun fetchInvoice(id: Int): Invoice? {
         // transaction(db) runs the internal query as a new database transaction.
         return transaction(db) {
@@ -33,8 +47,18 @@ class AntaeusDal(private val db: Database) {
 
     fun fetchInvoices(invoiceStatus: InvoiceStatus): List<Invoice> {
         return transaction(db) {
-            InvoiceTable.select {InvoiceTable.status eq invoiceStatus.toString()
-            }.map { it.toInvoice() }
+            InvoiceTable
+                    .select {InvoiceTable.status eq invoiceStatus.toString() }
+                    .map { it.toInvoice() }
+        }
+    }
+
+    fun fetchInvoices(invoiceStatus: InvoiceStatus, pageRequest: PageRequest): List<Invoice> {
+        return transaction(db) {
+            InvoiceTable
+                    .select {InvoiceTable.status eq invoiceStatus.toString() }
+                    .limit(pageRequest.pageSize, pageRequest.offset())
+                    .map { it.toInvoice() }
         }
     }
 

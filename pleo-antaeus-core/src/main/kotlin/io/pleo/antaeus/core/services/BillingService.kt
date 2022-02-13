@@ -16,6 +16,9 @@ class BillingService(
         private val notificationService: NotificationService,
         private val dateTimeUtility: DateTimeUtility
 ) : CoroutineScope {
+    //NOTE: main reason to have defaultPageSize is memory footprint optimization
+    //TODO: make it configurable
+    private val defaultPageSize = 20
     private var job: Job = Job()
     override val coroutineContext: CoroutineContext get() = Dispatchers.Default + job
 
@@ -27,10 +30,7 @@ class BillingService(
     fun run() = launch {
         while (true) {
             delay(dateTimeUtility.nextMonthFirstDayDelay(dateTimeUtility.now()))
-
-            invoiceService.fetchAll(InvoiceStatus.PENDING).forEach { invoice ->
-                charge(invoice)
-            }
+            invoiceService.executeForEach(InvoiceStatus.PENDING, defaultPageSize, ::charge)
         }
     }
 
