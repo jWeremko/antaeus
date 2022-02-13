@@ -26,10 +26,11 @@ class BillingService(
 
     fun run() = launch {
         while (true) {
+            delay(dateTimeUtility.nextMonthFirstDayDelay(dateTimeUtility.now()))
+
             invoiceService.fetchAll(InvoiceStatus.PENDING).forEach { invoice ->
                 charge(invoice)
             }
-            delay(dateTimeUtility.nextMonthFirstDay(dateTimeUtility.now()))
         }
     }
 

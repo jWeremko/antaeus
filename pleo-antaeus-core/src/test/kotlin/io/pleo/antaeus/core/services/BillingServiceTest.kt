@@ -87,10 +87,10 @@ class BillingServiceTest {
 
         every { invoiceService.fetchAll(InvoiceStatus.PENDING) } returns emptyList()
         every { dateTimeUtility.now() } returns now
-        every { dateTimeUtility.nextMonthFirstDay(now) } returns 200
+        every { dateTimeUtility.nextMonthFirstDayDelay(now) } returns 10
 
         billingService.run()
-        Thread.sleep(500)
+        Thread.sleep(100)
         billingService.stop()
     }
 }

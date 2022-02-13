@@ -1,56 +1,60 @@
 package io.pleo.antaeus.core.utils
 
-import io.mockk.every
-import io.mockk.mockk
-import io.mockk.mockkStatic
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.ZoneId
+import java.time.ZoneOffset
 import java.util.*
+import java.util.stream.Stream
+
 
 class CalendarDateTimeTest {
-    private val calendar = mockk<Calendar>()
     private val calendarDateTime = CalendarDateTime()
 
-    private val expectedDate = Date.from(LocalDate
-            .of(2020, 2, 1)
-            .atStartOfDay(ZoneId.systemDefault())
-            .toInstant())
-
-
-    @Test
-    fun `should return current month first day`() {
-        //TODO: this test is a bit artificial, think how to make it better
-        mockkStatic(Calendar::class)
-        every { Calendar.getInstance() } returns calendar
-        every { calendar.set(any(), any()) } returns Unit
-        every { calendar.time } returns expectedDate
-
-        assertEquals(expectedDate, calendarDateTime.currentMonthFirstDay())
+    private companion object {
+        @JvmStatic
+        fun dates(): Stream<Arguments> = Stream.of(
+                Arguments.of(LocalDate.of(2020, 2, 1).atTime(10, 10, 10)),
+                Arguments.of(LocalDate.of(2020, 2, 14).atTime(10, 10, 10))
+        )
     }
 
-    @Test
-    fun `should return next month first day`() {
-        mockkStatic(Calendar::class)
-        every { Calendar.getInstance() } returns calendar
-        every { calendar.get(Calendar.MONTH) } returns 1
-        every { calendar.set(any(), any()) } returns Unit
-        every { calendar.time } returns expectedDate
-
-        assertEquals(expectedDate, calendarDateTime.nextMonthFirstDay())
+    private fun convertToDate(date : LocalDateTime) : Date {
+        return Date.from(date.toInstant(ZoneOffset.UTC))
     }
 
-    @Test
-    fun `should return milliseconds to the next month first day`() {
-        val now = Date(expectedDate.time - 100)
+    @ParameterizedTest
+    @MethodSource("dates")
+    fun `given ${0} date, should return month first day`(localDate: LocalDateTime) {
+        val date = convertToDate(localDate)
+        val expected = Date.from(LocalDate
+                .of(2020, 2, 1)
+                .atStartOfDay(ZoneId.systemDefault())
+                .toInstant())
 
-        mockkStatic(Calendar::class)
-        every { Calendar.getInstance() } returns calendar
-        every { calendar.set(any(), any()) } returns Unit
-        every { calendar.get(Calendar.MONTH) } returns 1
-        every { calendar.time } returns expectedDate
+        assertEquals(expected, calendarDateTime.currentMonthFirstDay(date))
+    }
 
-        assertEquals(100, calendarDateTime.nextMonthFirstDay(now))
+    @ParameterizedTest
+    @MethodSource("dates")
+    fun `given ${0} date, should return next month first day`(localDate: LocalDateTime) {
+        val date = convertToDate(localDate)
+        val expected = Date.from(LocalDate
+                .of(2020, 3, 1)
+                .atStartOfDay(ZoneId.systemDefault())
+                .toInstant())
+        assertEquals(expected, calendarDateTime.nextMonthFirstDay(date))
+    }
+
+    @ParameterizedTest
+    @MethodSource("dates")
+    fun `given ${0} date, should return milliseconds to the next month first day`(localDate: LocalDateTime) {
+        val date = convertToDate(localDate)
+        val now = Date(date.time - 100)
+        assertEquals(100, calendarDateTime.nextMonthFirstDayDelay(now) - calendarDateTime.nextMonthFirstDayDelay(date))
     }
 }
