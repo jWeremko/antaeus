@@ -10,7 +10,9 @@ package io.pleo.antaeus.app
 import getPaymentProvider
 import io.pleo.antaeus.core.services.BillingService
 import io.pleo.antaeus.core.services.CustomerService
+import io.pleo.antaeus.core.notifications.DummyNotificationService
 import io.pleo.antaeus.core.services.InvoiceService
+import io.pleo.antaeus.core.utils.CalendarDateTime
 import io.pleo.antaeus.data.AntaeusDal
 import io.pleo.antaeus.data.CustomerTable
 import io.pleo.antaeus.data.InvoiceTable
@@ -59,13 +61,16 @@ fun main() {
     // Create core services
     val invoiceService = InvoiceService(dal = dal)
     val customerService = CustomerService(dal = dal)
+    val notificationService = DummyNotificationService() // TODO: we should not go to production with dummy service, testing purposes, change later!
+    val dateTimeUtility = CalendarDateTime()
 
     // This is _your_ billing service to be included where you see fit
-    val billingService = BillingService(paymentProvider = paymentProvider)
+    val billingService = BillingService(paymentProvider, invoiceService, notificationService, dateTimeUtility)
 
     // Create REST web service
     AntaeusRest(
         invoiceService = invoiceService,
-        customerService = customerService
+        customerService = customerService,
+        billingService = billingService
     ).run()
 }

@@ -8,6 +8,9 @@
 
 package io.pleo.antaeus.core.external
 
+import io.pleo.antaeus.core.exceptions.CurrencyMismatchException
+import io.pleo.antaeus.core.exceptions.CustomerNotFoundException
+import io.pleo.antaeus.core.exceptions.NetworkException
 import io.pleo.antaeus.models.Invoice
 
 interface PaymentProvider {
@@ -24,5 +27,6 @@ interface PaymentProvider {
           `NetworkException`: when a network error happens.
      */
 
+    @Throws(CustomerNotFoundException::class, CurrencyMismatchException::class, NetworkException::class)
     fun charge(invoice: Invoice): Boolean
 }
